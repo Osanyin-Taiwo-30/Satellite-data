@@ -1,1 +1,11 @@
 # Satellite-Codes
+
+This is a python module made to easily download, perform treatments and analysis of satellite images. To enjoy all the functionalities offered by this module you will need to install the following modules first:
+
+    pandas
+    glob
+    rasterio
+    xarray
+    geoviews (version 1.6.2 or higher)
+    netCDF4
+    cartopy
