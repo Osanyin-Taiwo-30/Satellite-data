@@ -10,4 +10,4 @@ This is a python module made to easily download, perform treatments and analysis
     netCDF4
     cartopy
 
-See the notebook *examples.ipynb* to see how everything works. It was made to be simple and straighforward!
+Check the notebook *examples.ipynb* to see how everything works. It was made to be simple and straighforward!
