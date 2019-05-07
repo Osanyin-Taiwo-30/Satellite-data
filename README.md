@@ -5,6 +5,7 @@ This is a python module made to easily download, perform treatments and analysis
     pandas
     glob
     rasterio
+    shapely
     xarray
     netCDF4
     cartopy
