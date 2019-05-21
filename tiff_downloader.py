@@ -19,12 +19,11 @@ def download_tiffs(source, date1, date2, point1, point2, opt=False):
             It is the name of the source from which we will take the captured images. 
             For example 'LandDAAC-v5-day' is a valid name. Other possible names may
             be seen with the command about('sources').
-        date1, date2: string
+        date1, date2: list or tuple of strings
             Initial and final date of the interval in which we are interested. The only 
-            accepted format at the moment is 'day-month-year', putting a leading zero of 
-            the number when it only has one digit. For example date1 = '01 -01-2016 ' is 
-            a format that will be accepted.
-        point1, point2: tupla
+            accepted format at the moment is 'year-month-day'. Months and days should
+            have two digits. 
+        point1, point2: tuple
             point1 is a tuple (x, y) corresponding to the upper left point of the image, 
             while point2 corresponds to the lower right point.
         opt: classe
@@ -43,15 +42,13 @@ def download_tiffs(source, date1, date2, point1, point2, opt=False):
     # Obtains the frequency of the source.
     freq = source_freq(source)
     
-    # Creates the string with the dates.
-    temp = str(date1).split()[0]
-    day1 = str(temp.split('-')[0])
-    month1 = str(temp.split('-')[1])
-    year1 = str(temp.split('-')[2])
-    temp = str(date2).split()[0]
-    day2 = str(temp.split('-')[0])
-    month2 = str(temp.split('-')[1])
-    year2 = str(temp.split('-')[2])
+    # Extract the values from the dates.
+    year1 = date1[0]
+    month1 = date1[1]
+    day1 = date1[2]
+    year2 = date2[0]
+    month2 = date2[1]
+    day2 = date2[2]
     
     # Dates of interest.
     dates = pd.date_range(year1 + month1 + day1, year2 + month2 + day2, freq=freq)
@@ -61,15 +58,9 @@ def download_tiffs(source, date1, date2, point1, point2, opt=False):
     # Download maps by date.
     length = len(dates)
     for l in range(length-1):
-        d = dates[l]
-        temp = str(d).split()[0]
-        month1 = temp.split('-')[1]
-        day1 = temp.split('-')[2]
-        temp = str(d+1).split()[0]
-        year2 = temp.split('-')[0]
-        month2 = temp.split('-')[1]
-        day2 = temp.split('-')[2]
-        url = single_download(source, day1, day2, month1, month2, year1, year2, x1, x2, y1, y2, opt)
+        current_date = dates[l]
+        next_date = dates[l+1]
+        url = single_download(source, current_date, next_date, x1, x2, y1, y2, opt)
                 
     # View time series after the downloads.
     if opt.time_series:
@@ -78,12 +69,24 @@ def download_tiffs(source, date1, date2, point1, point2, opt=False):
     return 
 
 
-def single_download(source, day1, day2, month1, month2, year1, year2, x1, x2, y1, y2, opt):
+def single_download(source, date1, date2, x1, x2, y1, y2, opt):
     """ Function responsible for each satellite image download. """
+
+    # Convert numeric data values to string format. 
+    year1 = str(date1.year)
+    month1 = str(date1.month)
+    day1 = str(date1.day)
+    year2 = str(date2.year)
+    month2 = str(date2.month)
+    day2 = str(date2.day)
+    if len(month1) == 1:    month1 = '0' + month1
+    if len(day1) == 1:      day1 = '0' + day1
+    if len(month2) == 1:    month2 = '0' + month2
+    if len(day2) == 1:      day2 = '0' + day2
     
     # Converts numeric month to written month.
-    month1_str = month_to_string(month1)
-    month2_str = month_to_string(month2)
+    month1_str = month_to_string(date1.month)
+    month2_str = month_to_string(date2.month)
     
     # Generic url (the specifications comes after). 
     start_url = source_url(source)
@@ -103,6 +106,9 @@ def single_download(source, day1, day2, month1, month2, year1, year2, x1, x2, y1
     # Download url with specified date.
     url = url_base.format(month1, day1, day2)
     status = os.system("wget '{}'".format(url))
+    final_filename = str(day1) + '-' + str(month1) + '-' + str(year1) + '.tiff'  
+    os.rename(filename, final_filename)
+    filename = final_filename
     
     # After saving the image, the treatment process begins.
     if status == 0: 
