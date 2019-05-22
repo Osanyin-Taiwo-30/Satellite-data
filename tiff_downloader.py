@@ -106,17 +106,17 @@ def single_download(source, date1, date2, x1, x2, y1, y2, opt):
     # Download url with specified date.
     url = url_base.format(month1, day1, day2)
     status = os.system("wget '{}'".format(url))
-    final_filename = str(day1) + '-' + str(month1) + '-' + str(year1) + '.tiff'  
+    final_filename = str(year1) + '-' + str(month1) + '-' + str(day1) + '.tiff'  
     os.rename(filename, final_filename)
     filename = final_filename
     
     # After saving the image, the treatment process begins.
     if status == 0: 
-        msg = 'Download (' + day1 + '-' + month1 + '-' + year1 + ') (' + day2 + '-' + month2 + '-' + year2 + '): success'
+        msg = 'Download (' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '): success'
         print(msg)
         regrid_image(filename, opt)
     else:
-        msg = 'Download (' + day1 + '-' + month1 + '-' + year1 + ') (' + day2 + '-' + month2 + '-' + year2 + '): fail'
+        msg = 'Download (' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '): fail'
         print(msg)
         
     # If the treated image is the only one required, the original can be deleted automatically.
@@ -471,3 +471,73 @@ def view_time_series(filename, cmap='jet'):
         ensemble = dataset.to(gv.Image, ['x', 'y'])
         gv.output(ensemble.opts(cmap=cmap, colorbar=True, fig_size=200, backend='matplotlib'), backend='matplotlib')
     return
+
+
+def point_time_series(point, spatial=False):
+    """ 
+    This function plots the evolution of the time series with respect to a specific point. All tiff files 
+    in the current folder are sorted and used to construct the time series. Therefore be sure you have the 
+    correct files there. Additionaly, the values to construct the time series are returned by the function 
+    in the form of two lists.
+ 
+    Inputs
+    ------
+    point: tuple
+        point is a tuple (col, row) or (x, y) corresponding to some coordinate of the image. 
+    spatial: bool
+        It is set to True, then we interpret the tuple as a spatial coordinate (x, y), otherwise we 
+        interpret it as a pixel (col, row) represented by a value in an array.
+        
+    Outputs
+    -------
+    labels: list
+        The x axis values of the plot (the dates)
+    values: list
+        The y axis values of the plot (the actual values of the data at each time) 
+    """
+
+    # Extracts point input information.
+    p1, p2 = point[0], point[1]
+    
+    # Create list with all tiff filenames in chronological order.
+    filenames = glob.glob('*.tiff')
+    filenames.sort()
+    values = []
+    labels = []
+    
+    # Save positional coordinates.
+    with rasterio.open(filenames[0]) as dataset: 
+        dataset_array = dataset.read()[0,:,:]
+        
+        # x, y to col, row.
+        if spatial:
+            col, row = ~dataset.transform  * (p1, p2)
+            x, y = p1, p2
+        # col, row to x, y.
+        else:
+            col, row = p1, p2
+            x, y = dataset.transform  * (col, row)
+            
+        col, row = int(col), int(row)   
+        
+        # Show point in the map for reference.
+        plt.imshow(dataset_array)
+        plt.plot(col, row, 'rs')
+        plt.show()
+
+    for f in filenames:
+        with rasterio.open(f) as dataset: 
+            dataset_array = dataset.read()[0,:,:]
+            labels.append(f.replace('new_', '').replace('.tiff', ''))
+            values.append(dataset_array[row, col])
+
+    plt.figure(figsize=[16,4])
+    plt.plot(labels, values, 'b--')  
+    plt.plot(labels, values, 'bs')
+    title = 'Time series of coordinate (' + str(x) + ', ' + str(y) + ')'
+    plt.title(title)
+    plt.xticks(rotation=90)
+    plt.grid()
+    plt.show()
+
+    return labels, values   
