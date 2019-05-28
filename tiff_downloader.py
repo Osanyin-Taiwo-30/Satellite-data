@@ -33,8 +33,8 @@ def download_tiffs(source, date1, date2, point1, point2, opt=False):
     """
     
     # Extracts input information.
-    x1, y1 = point1[0], point1[1]
-    x2, y2 = point2[0], point2[1]
+    x1, y1 = point1
+    x2, y2 = point2
     
     # Check extra options to be included.
     opt = create_options(opt)
@@ -43,17 +43,13 @@ def download_tiffs(source, date1, date2, point1, point2, opt=False):
     freq = source_freq(source)
     
     # Extract the values from the dates.
-    year1 = date1[0]
-    month1 = date1[1]
-    day1 = date1[2]
-    year2 = date2[0]
-    month2 = date2[1]
-    day2 = date2[2]
-    
+    year1, month1, day1 = date1
+    year2, month2, day2 = date2
+
     # Dates of interest.
     dates = pd.date_range(year1 + month1 + day1, year2 + month2 + day2, freq=freq)
-    #print(dates)
-    #print()
+    # print(dates)
+    # print()
     
     # Download maps by date.
     length = len(dates)
@@ -64,7 +60,7 @@ def download_tiffs(source, date1, date2, point1, point2, opt=False):
                 
     # View time series after the downloads.
     if opt.time_series:
-        construct_and_view_time_series(dates, opt)
+        construct_time_series(dates, opt)
                 
     return 
 
@@ -90,8 +86,10 @@ def single_download(source, date1, date2, x1, x2, y1, y2, opt):
     
     # Generic url (the specifications comes after). 
     start_url = source_url(source)
-    time_range = "T/(" + day1 + "%20" + month1_str + "%20" + year2 + ")/(" + day2 + "%20" + month2_str + "%20" + year2 + ")/"
-    bounding_box = "RANGE/X/" + str(float(x1)) + "/" + str(float(x2)) + "/RANGE/Y/" + str(float(y1)) + "/" + str(float(y2)) + "/"
+    time_range = "T/(" + day1 + "%20" + month1_str + "%20" + year2 + \
+                 ")/(" + day2 + "%20" + month2_str + "%20" + year2 + ")/"
+    bounding_box = "RANGE/X/" + str(float(x1)) + "/" + str(float(x2)) + \
+                   "/RANGE/Y/" + str(float(y1)) + "/" + str(float(y2)) + "/"
     time = time_url(opt)
     
     end_url = "palettecolor.tiff?filename=data" + year2 + "{}{}-{}.tiff"
@@ -112,15 +110,15 @@ def single_download(source, date1, date2, x1, x2, y1, y2, opt):
     
     # After saving the image, the treatment process begins.
     if status == 0: 
-        msg = 'Download (' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '): success'
+        msg = 'Download(' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '): success'
         print(msg)
         regrid_image(filename, opt)
     else:
-        msg = 'Download (' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '): fail'
+        msg = 'Download(' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '): fail'
         print(msg)
         
     # If the treated image is the only one required, the original can be deleted automatically.
-    if opt.keep_original == False:
+    if not opt.keep_original:
         exists = os.path.isfile(filename)
         if exists:
             os.remove(filename)
@@ -173,15 +171,15 @@ def source_url(source):
     return url
 
 
-def time_url(opt):
+def time_url(Opt):
     """ Piece of the url responsible for the temporal part. """
     
     url_1 = "RANGE/"
-    if opt.box_avrg:
+    if Opt.box_avrg:
         url_2 = "T/3/boxAverage/"
     else: 
         url_2 = ""
-    if opt.pentad_avrg:
+    if Opt.pentad_avrg:
         url_3 = "T/pentadAverage/"
     else:
         url_3 = ""
@@ -191,13 +189,13 @@ def time_url(opt):
     return url_1 + url_2 + url_3 + url_4 
 
 
-def create_options(opt):
+def create_options(Opt):
     """ Extract the optional parameter """
     
-    if opt == False:
+    if Opt == False:
         return
     
-    class opt_out:
+    class OptOut:
         box_avrg = False
         pentad_avrg = False
         regrid = False
@@ -205,27 +203,27 @@ def create_options(opt):
         keep_original = True
         time_series = False
         cmap = 'jet'
-        if 'box_avrg' in dir(opt):
-            box_avrg = opt.box_avrg
-        if 'pentad_avrg' in dir(opt):
-            pentad_avrg = opt.pentad_avrg
-        if 'regrid' in dir(opt):
-            if type(opt.regrid) == list and len(opt.regrid) == 2:
-                factor = opt.regrid[0]
-                method = opt.regrid[1]
+        if 'box_avrg' in dir(Opt):
+            box_avrg = Opt.box_avrg
+        if 'pentad_avrg' in dir(Opt):
+            pentad_avrg = Opt.pentad_avrg
+        if 'regrid' in dir(Opt):
+            if type(Opt.regrid) == list and len(Opt.regrid) == 2:
+                factor = Opt.regrid[0]
+                method = Opt.regrid[1]
                 regrid = [factor, method]
-        if 'plot' in dir(opt):
-            plot = opt.plot
-        if 'keep_original' in dir(opt):
-            keep_original = opt.keep_original
-        if 'time_series' in dir(opt):
-            time_series = opt.time_series
+        if 'plot' in dir(Opt):
+            plot = Opt.plot
+        if 'keep_original' in dir(Opt):
+            keep_original = Opt.keep_original
+        if 'time_series' in dir(Opt):
+            time_series = Opt.time_series
             if time_series:
                 keep_original = False
-        if 'cmap' in dir(opt):
-            cmap = opt.cmap
+        if 'cmap' in dir(Opt):
+            cmap = Opt.cmap
             
-    return opt_out
+    return OptOut
 
 
 def about(x):
@@ -341,10 +339,10 @@ def about(x):
 def regrid_image(filename, opt):
     """ This function is responsible for upsampling or downsampling the images using some precribed method. """
     
-    if opt.regrid != False:
+    if opt.regrid:
         factor = opt.regrid[0]
         method = opt.regrid[1]
-        regrid = [factor, method]
+
         with rasterio.open(filename) as dataset:
             a = dataset.transform.a
             b = dataset.transform.b
@@ -353,7 +351,7 @@ def regrid_image(filename, opt):
             e = dataset.transform.e
             f = dataset.transform.f
             array = dataset.read()
-            new_array = np.ones( (int(factor*array.shape[1]), int(factor*array.shape[2])), dtype=np.uint8)
+            new_array = np.ones((int(factor*array.shape[1]), int(factor*array.shape[2])), dtype=np.uint8)
             new_transform = (a/factor, b, c, d, e/factor, f)
             dataset_crs = dataset.crs        
             dataset_crs = {'init': 'EPSG:4326'}
@@ -424,7 +422,7 @@ def regrid_image(filename, opt):
     return
 
 
-def construct_and_view_time_series(dates, opt):
+def construct_time_series(dates, opt):
     """ 
     This function creates a netcdf file from the downladed tiffs (as a time series) and open an interactive session
     to explore this time series. To enable this function you must pass the option time_series as True to the function
@@ -473,71 +471,111 @@ def view_time_series(filename, cmap='jet'):
     return
 
 
-def point_time_series(point, spatial=False):
+def point_time_series(points, spatial_coordinates=False):
     """ 
-    This function plots the evolution of the time series with respect to a specific point. All tiff files 
-    in the current folder are sorted and used to construct the time series. Therefore be sure you have the 
-    correct files there. Additionaly, the values to construct the time series are returned by the function 
-    in the form of two lists.
+    This function plots the evolution of the time series with respect to a list of points. All tiff files in the current
+    folder are sorted and used to construct the time series. Therefore be sure you have the correct files there.
+    Additionaly, the values to construct the time series are returned by the function in the form of two lists.
  
     Inputs
     ------
-    point: tuple
-        point is a tuple (col, row) or (x, y) corresponding to some coordinate of the image. 
-    spatial: bool
+    points: list of tuples
+        Each element of points is a tuple (col, row) or (x, y) corresponding to some coordinate of the image.
+    spatial_coordinates: bool
         It is set to True, then we interpret the tuple as a spatial coordinate (x, y), otherwise we 
         interpret it as a pixel (col, row) represented by a value in an array.
         
     Outputs
     -------
-    labels: list
-        The x axis values of the plot (the dates)
-    values: list
-        The y axis values of the plot (the actual values of the data at each time) 
+    info: dict
+        info[point] = [dates, values], where dates correspond to the x axis of the plot and the values correspond to the
+        y values of the plot.
     """
-
-    # Extracts point input information.
-    p1, p2 = point[0], point[1]
     
     # Create list with all tiff filenames in chronological order.
     filenames = glob.glob('*.tiff')
     filenames.sort()
-    values = []
-    labels = []
-    
-    # Save positional coordinates.
-    with rasterio.open(filenames[0]) as dataset: 
-        dataset_array = dataset.read()[0,:,:]
-        
-        # x, y to col, row.
-        if spatial:
-            col, row = ~dataset.transform  * (p1, p2)
-            x, y = p1, p2
-        # col, row to x, y.
-        else:
-            col, row = p1, p2
-            x, y = dataset.transform  * (col, row)
-            
-        col, row = int(col), int(row)   
-        
-        # Show point in the map for reference.
-        plt.imshow(dataset_array)
-        plt.plot(col, row, 'rs')
-        plt.show()
 
-    for f in filenames:
-        with rasterio.open(f) as dataset: 
-            dataset_array = dataset.read()[0,:,:]
-            labels.append(f.replace('new_', '').replace('.tiff', ''))
-            values.append(dataset_array[row, col])
+    # Initialize dictionary defined by info[point] = [dates, values], where dates are the sequence of the dates in
+    # the time series and values are the corresponding values attained by the point.
+    info = {}
 
-    plt.figure(figsize=[16,4])
-    plt.plot(labels, values, 'b--')  
-    plt.plot(labels, values, 'bs')
-    title = 'Time series of coordinate (' + str(x) + ', ' + str(y) + ')'
+    col_row_format = []
+    for point in points:
+        # Extracts point input information.
+        p1, p2 = point
+
+        # Initialize list of dates and values.
+        dates = []
+        values = []
+
+        # Save positional coordinates.
+        with rasterio.open(filenames[0]) as dataset:
+            # x, y to col, row.
+            if spatial_coordinates:
+                col, row = ~dataset.transform * (p1, p2)
+            # col, row to x, y.
+            else:
+                col, row = p1, p2
+
+            col, row = int(col), int(row)
+            col_row_format.append([col, row])
+
+        for f in filenames:
+            with rasterio.open(f) as dataset:
+                dataset_array = dataset.read()[0, :, :]
+                dates.append(f.replace('new_', '').replace('.tiff', ''))
+                values.append(dataset_array[row, col])
+
+        # Update dictionary.
+        info[str(point[0]) + ', ' + str(point[1])] = [[dates[i], values[i]] for i in range(len(dates))]
+
+    plot_point_time_series(info, col_row_format)
+
+    return info
+
+
+def plot_point_time_series(info, col_row_format):
+    """
+    After constructing the time series (in a dictionary) of several points with the fucntion point_time_series, this
+    function is responsible for the plots. All inputs to this function are described in the previous function.
+    """
+
+    # List with all dates.
+    info_keys = [s for s in info.keys()]
+
+    # Create list with all tiff filenames in chronological order.
+    filenames = glob.glob('*.tiff')
+    filenames.sort()
+
+    # Show points in the map for reference.
+    with rasterio.open(filenames[0]) as dataset:
+        dataset_array = dataset.read()[0, :, :]
+
+    i = 0
+    plt.figure(figsize=[10, 8])
+    plt.imshow(dataset_array)
+    for point in col_row_format:
+        col, row = point
+        plt.plot(col, row, 's', label='(' + info_keys[i] + ')')
+        i += 1
+    plt.legend()
+    plt.show()
+
+    # Plot time series.
+    i = 0
+    plt.figure(figsize=[16, 5])
+    for info_val in info.values():
+        num_dates = len(info_val)
+        dates = [info_val[i][0] for i in range(num_dates)]
+        values = [info_val[i][1] for i in range(num_dates)]
+        plt.plot(dates, values, label='(' + info_keys[i] + ')')
+        i += 1
+    title = 'Time series of given coordinates'
     plt.title(title)
+    plt.legend()
     plt.xticks(rotation=90)
     plt.grid()
     plt.show()
 
-    return labels, values   
+    return
