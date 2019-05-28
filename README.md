@@ -11,4 +11,4 @@ This is a python module made to easily download, perform treatments and analysis
     cartopy
     geoviews (version 1.6.2 or higher)
 
-Check the notebook *examples.ipynb* to see how everything works. It was made to be simple and straighforward!
+Check the notebook *tutorial.ipynb* to see how everything works. It was made to be simple and straighforward!
