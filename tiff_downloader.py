@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import urllib.request
 import os
 import sys
 import glob
@@ -8,9 +9,10 @@ import rasterio
 from rasterio.warp import reproject, Resampling
 import xarray as xr
 import geoviews as gv
+from celery import Celery
 
 
-def download_tiffs(source, date1, date2, point1, point2, opt=False):
+def download_tiffs(source, date1, date2, point1, point2, path, opt=False):
     """ Function responsible for the main calls. 
     
         Inputs
@@ -26,6 +28,8 @@ def download_tiffs(source, date1, date2, point1, point2, opt=False):
         point1, point2: tuple
             point1 is a tuple (x, y) corresponding to the upper left point of the image, 
             while point2 corresponds to the lower right point.
+        path: string
+            The path where the downloaded files will be stored.
         opt: classe
             All possible extra options are passed as variables of this class. If no class 
             is passed, the default(False) is assumed, which means that no extra options 
@@ -56,8 +60,8 @@ def download_tiffs(source, date1, date2, point1, point2, opt=False):
     for l in range(length-1):
         current_date = dates[l]
         next_date = dates[l+1]
-        url = single_download(source, current_date, next_date, x1, x2, y1, y2, opt)
-                
+        url = single_download(source, current_date, next_date, x1, x2, y1, y2, path, opt)
+                        
     # View time series after the downloads.
     if opt.time_series:
         construct_time_series(dates, opt)
@@ -65,7 +69,7 @@ def download_tiffs(source, date1, date2, point1, point2, opt=False):
     return 
 
 
-def single_download(source, date1, date2, x1, x2, y1, y2, opt):
+def single_download(source, date1, date2, x1, x2, y1, y2, path, opt):
     """ Function responsible for each satellite image download. """
 
     # Convert numeric data values to string format. 
@@ -84,44 +88,70 @@ def single_download(source, date1, date2, x1, x2, y1, y2, opt):
     month1_str = month_to_string(date1.month)
     month2_str = month_to_string(date2.month)
     
-    # Generic url (the specifications comes after). 
+    # Generate url with specifications.
     start_url = source_url(source)
     time_range = "T/(" + day1 + "%20" + month1_str + "%20" + year2 + \
                  ")/(" + day2 + "%20" + month2_str + "%20" + year2 + ")/"
     bounding_box = "RANGE/X/" + str(float(x1)) + "/" + str(float(x2)) + \
                    "/RANGE/Y/" + str(float(y1)) + "/" + str(float(y2)) + "/"
-    time = time_url(opt)
-    
-    end_url = "palettecolor.tiff?filename=data" + year2 + "{}{}-{}.tiff"
+    time = "RANGE/T/4015.5/4017.5/RANGE/"
+    end_url = "%5BX/Y/%5D/palettecolor.tiff?filename=data" + year2 + "{}{}-{}.tiff"
     url_base = start_url + time_range + bounding_box + time + end_url
-    
-    # Check if the file already exists and delete it if it exists.
-    filename = end_url.format(month1, day1, day2)
-    exists = os.path.isfile(filename)
-    if exists:
-        os.remove(filename)
-    
-    # Download url with specified date.
     url = url_base.format(month1, day1, day2)
-    status = os.system("wget '{}'".format(url))
-    final_filename = str(year1) + '-' + str(month1) + '-' + str(day1) + '.tiff'  
-    os.rename(filename, final_filename)
-    filename = final_filename
-    
-    # After saving the image, the treatment process begins.
-    if status == 0: 
-        msg = 'Download(' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '): success'
-        print(msg)
-        regrid_image(filename, opt)
-    else:
-        msg = 'Download(' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '): fail'
+
+    # Generate filename.
+    filename = str(year1) + '-' + str(month1) + '-' + str(day1) + '.tiff'
+
+    # Remove duplicate file with same name if it exists.
+    exists = os.path.isfile(path + "/" + filename)
+    if exists:
+        os.remove(path + "/" + filename)
+
+    # Download and save url content.
+    try:
+        # Download.
+        response = urllib.request.urlopen(url)
+        data = response.read()
+        with open(path + "/" + filename, 'wb') as file:
+            file.write(data)
+        file.close()
+        msg = 'Download (' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '):success'
         print(msg)
         
-    # If the treated image is the only one required, the original can be deleted automatically.
+        # Fix values scale (the images are downloaded as uint8, not float).
+        url_dods = start_url + time_range + bounding_box + time + 'dods'
+        remote_data = xr.open_dataset(url_dods, decode_times=False)
+        a = remote_data['LST'].scale_min
+        b = remote_data['LST'].scale_max
+        with rasterio.open(path + "/" + filename) as dataset:
+            profile = dataset.profile
+            profile.update(dtype=rasterio.float32)
+            array = dataset.read()
+            #m = np.min(array[0, :, :])
+            #M = np.max(array[0, :, :])
+            m = 0
+            M = 255
+        new_array = (b-a)/(M-m)*array[0, :, :] + a - m*(b-a)/(M-m)
+        new_array = np.array(new_array, dtype=np.float32)
+        with rasterio.open(path + "/" + filename, 'w', **profile) as dataset:
+            dataset.write(new_array, 1)        
+        
+        # After saving the image, the treatment process begins.
+        regrid_image(filename, path, opt)
+        
+    except urllib.error.HTTPError:
+        msg = 'Download (' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '):fail'
+        print(msg)
+        
+    except urllib.error.URLError:
+        msg = 'Download (' + year1 + '-' + month1 + '-' + day1 + ') (' + year2 + '-' + month2 + '-' + day2 + '):fail'
+        print(msg)
+        
+    # If the treated image is the only one required, the original image is deleted.
     if not opt.keep_original:
-        exists = os.path.isfile(filename)
+        exists = os.path.isfile(path + "/" + filename)
         if exists:
-            os.remove(filename)
+            os.remove(path + "/" + filename)
     
     return url
 
@@ -171,57 +201,40 @@ def source_url(source):
     return url
 
 
-def time_url(Opt):
-    """ Piece of the url responsible for the temporal part. """
-    
-    url_1 = "RANGE/"
-    if Opt.box_avrg:
-        url_2 = "T/3/boxAverage/"
-    else: 
-        url_2 = ""
-    if Opt.pentad_avrg:
-        url_3 = "T/pentadAverage/"
-    else:
-        url_3 = ""
-        
-    url_4 = "T/4015.5/4017.5/RANGE/%5BX/Y/%5D/"
-    
-    return url_1 + url_2 + url_3 + url_4 
-
-
 def create_options(Opt):
     """ Extract the optional parameter """
-    
+
     if Opt == False:
-        return
+        class OptOut:
+            regrid = False
+            plot = False
+            keep_original = True
+            time_series = False
+            cmap = 'jet'
+
+        return OptOut
     
     class OptOut:
-        box_avrg = False
-        pentad_avrg = False
         regrid = False
         plot = False
         keep_original = True
         time_series = False
         cmap = 'jet'
-        if 'box_avrg' in dir(Opt):
-            box_avrg = Opt.box_avrg
-        if 'pentad_avrg' in dir(Opt):
-            pentad_avrg = Opt.pentad_avrg
-        if 'regrid' in dir(Opt):
-            if type(Opt.regrid) == list and len(Opt.regrid) == 2:
-                factor = Opt.regrid[0]
-                method = Opt.regrid[1]
+        if 'regrid' in Opt:
+            if type(Opt['regrid']) == list and len(Opt['regrid']) == 2:
+                factor = Opt['regrid'][0]
+                method = Opt['regrid'][1]
                 regrid = [factor, method]
-        if 'plot' in dir(Opt):
-            plot = Opt.plot
-        if 'keep_original' in dir(Opt):
-            keep_original = Opt.keep_original
-        if 'time_series' in dir(Opt):
-            time_series = Opt.time_series
+        if 'plot' in Opt:
+            plot = Opt['plot']
+        if 'keep_original' in Opt:
+            keep_original = Opt['keep_original']
+        if 'time_series' in Opt:
+            time_series = Opt['time_series']
             if time_series:
                 keep_original = False
-        if 'cmap' in dir(Opt):
-            cmap = Opt.cmap
+        if 'cmap' in Opt:
+            cmap = Opt['cmap']
             
     return OptOut
 
@@ -321,29 +334,17 @@ def about(x):
         print('When this option is set to True the program opens an interactive session with the data just downloaded. Default is False.')
         print()
         
-        print('box_average (bool)')
-        print('------------------')
-        print('Seasonal/chunk averages: For the latest variable on the stack, boxAverage calculates non-overlapping, unweighted averages over windows of length interval over the specified grid, starting with the first point in the grid. We are using 3 time-unit average.')
-        print('Link: https://iridl.ldeo.columbia.edu/dochelp/Documentation/details/index.html?func=boxAverage')
-        print()
-        
-        print('pentad_average (bool)')
-        print('---------------------')
-        print('Converts daily data to pentad (i.e., five-day) data by averaging.')
-        print('Link: https://iridl.ldeo.columbia.edu/dochelp/Documentation/details/index.html?func=pentadAverage')
-        print()
-        
     return
 
 
-def regrid_image(filename, opt):
+def regrid_image(filename, path, opt):
     """ This function is responsible for upsampling or downsampling the images using some precribed method. """
     
     if opt.regrid:
         factor = opt.regrid[0]
         method = opt.regrid[1]
 
-        with rasterio.open(filename) as dataset:
+        with rasterio.open(path + "/" + filename) as dataset:
             a = dataset.transform.a
             b = dataset.transform.b
             c = dataset.transform.c
@@ -351,11 +352,12 @@ def regrid_image(filename, opt):
             e = dataset.transform.e
             f = dataset.transform.f
             array = dataset.read()
-            new_array = np.ones((int(factor*array.shape[1]), int(factor*array.shape[2])), dtype=np.uint8)
+            new_array = np.ones((int(factor*array.shape[1]), int(factor*array.shape[2])), dtype=np.float32)
             new_transform = (a/factor, b, c, d, e/factor, f)
             dataset_crs = dataset.crs        
-            dataset_crs = {'init': 'EPSG:4326'}
-            new_crs = {'init': 'EPSG:4326'}
+            #dataset_crs = {'init': 'EPSG:4326'}
+            #new_crs = {'init': 'EPSG:4326'}
+            new_crs = dataset.crs
         
             if method == 'nearest':
                 reproject(
@@ -399,7 +401,7 @@ def regrid_image(filename, opt):
      
             new_profile = dataset.profile.copy()
             new_profile.update({
-                'dtype': 'uint8',
+                'dtype': 'float32',
                 'height': new_array.shape[0],
                 'width': new_array.shape[1],
                 'transform': new_transform})
@@ -410,14 +412,25 @@ def regrid_image(filename, opt):
                 plt.xlabel('Column #')
                 plt.ylabel('Row #')
                 plt.show()
-        
+
+        # Remove duplicates before saving new ones.
         new_filename = 'new_' + filename
-        exists = os.path.isfile(new_filename)
+        exists = os.path.isfile(path + "/" + new_filename)
         if exists:
-            os.remove(new_filename)
+            os.remove(path + "/" + new_filename)
         
-        with rasterio.open(new_filename, 'w', **new_profile) as new_dataset:
+        with rasterio.open(path + "/" + new_filename, 'w', **new_profile) as new_dataset:
             new_dataset.write_band(1, new_array)
+            
+    else:
+        with rasterio.open(path + "/" + filename) as dataset:
+            array = dataset.read()
+        if opt.plot:
+            plt.imshow(array[0, :, :], cmap=opt.cmap)
+            plt.colorbar(fraction=0.02)
+            plt.xlabel('Column #')
+            plt.ylabel('Row #')
+            plt.show()       
         
     return
 
