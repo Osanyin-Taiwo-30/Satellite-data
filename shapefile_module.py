@@ -187,14 +187,6 @@ def zonal_plot(shp_filename, z_means, title, cmap='jet'):
     ax.axis('off')
     # Add a title.
     ax.set_title(title, fontdict={'fontsize': '25', 'fontweight': '3'})
-    # Create an annotation for the data source.
-    ax.annotate('Fonte: FioCruz',
-                xy=(0.1, .08),
-                xycoords='figure fraction',
-                horizontalalignment='left',
-                verticalalignment='top',
-                fontsize=12,
-                color='#555555')
     # Create colorbar as a legend.
     sm = plt.cm.ScalarMappable(cmap=new_cmap, norm=plt.Normalize(vmin=vmin, vmax=vmax))
     # Empty array for the data range.

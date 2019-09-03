@@ -28,17 +28,7 @@ Geoviews is optional as it is responsible for only some visualization functions.
 
 ## Starting capture
 
-Primeiramente, rode o worker task.py com o comando 
-
-	celery -A tasks worker --loglevel=info 
-
-no terminal. Este comando inicializa o Celery, que poderá fazer os downloads de forma distribuída. Às vezes a opção 'loglevel=info' pode não ter informação o suficiente, neste caso pode-se trocar 'info' por 'debug'. Também pode ocorrer o contrário, quando não se deseja output algum além do mínimo necessário, neste caso simplesmente omita a opção loglevel.
-
-Em outra aba do terminal, execute o comando 
-
-	flower 
-
-Este programa é opcional, mas ele é bastante conveniente para monitorar os downloads. Mais informações sobre este programa podem ser obtidas [aqui](https://flower.readthedocs.io/en/latest/). Após executá-lo, ele irá indicar um link para abrir navegador (http://localhost:5555). 
+![alt text](readme_files/demo.gif)
 
 Agora podemos executar o programa para o download das imagens. Um exemplo de como isto é feito é mostrado abaixo.
 
