@@ -1,12 +1,12 @@
-# AlertaDengueCaptura - Downloader App
+# Satelite Codes
 
-As rotinas disponíveis neste pacote foram feitas para a captura e processo de imagens de satélite, de uma maneira fácil e conveniente. Além disso, há rotinas para combinar dados raster com camadas shapefiles afim de se obter imagens mais informativas. Confira o notebook *examples.ipynb* para ver como tudo funciona. 
+The routines available in this package are designed to capture and process satellite images easily and conveniently. In addition, there are routines for combining raster data with shapefiles layers for more informative images. Check out the notebook * examples.ipynb * to see how it all works.
 
 ![alt text](https://github.com/felipebottega/AlertaDengueCaptura/blob/master/downloader_app/readme_files/pic0.png)
 
-## Requisitos
+## Requisites
 
-Para usar todas as funcionalidades, você precisará dos seguintes módulos:
+To use all the features, you will need the following modules:
 
     numpy
     pandas
@@ -24,9 +24,9 @@ Para usar todas as funcionalidades, você precisará dos seguintes módulos:
     rabbitmq-server
     flower
 
-Geoviews é opcional pois é responsável por apenas algumas funções de visualização. Se você quiser essas funcionalidades, então o cartopy deve ser instalado antes do geoviews.
+Geoviews is optional as it is responsible for only some visualization functions. If you want these features, then cartopy must be installed before geoviews.
 
-## Iniciando a captura
+## Starting capture
 
 Primeiramente, rode o worker task.py com o comando 
 
