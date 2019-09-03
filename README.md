@@ -1,8 +1,8 @@
 # Satelite Codes
 
-The routines available in this package are designed to capture and process satellite images easily and conveniently. In addition, there are routines for combining raster data with shapefiles layers for more informative images. Check out the notebook * examples.ipynb * to see how it all works.
+The routines available in this package are designed to capture and process satellite images easily and conveniently. In addition, there are routines for combining raster data with shapefiles layers for more informative images. Check out the notebook *examples.ipynb* to see how it all works.
 
-![alt text](https://github.com/felipebottega/AlertaDengueCaptura/blob/master/downloader_app/readme_files/pic0.png)
+![alt text](https://github.com/felipebottega/Satellite-Codes/blob/master/readme_files/pic0.png)
 
 ## Requisites
 
