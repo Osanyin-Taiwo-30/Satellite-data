@@ -40,7 +40,9 @@ With minimum effort you can tell the program to compute the average (pixel) per 
 
 Interactive sessions to visualize the time evolution of the raster data are available too. 
 
-![alt text](readme_files/demo.gif)
+<p align="center">
+  <img src="https://github.com/felipebottega/Satellite-Codes/blob/master/readme_files/demo.gif">
+</p>
 
 
 
