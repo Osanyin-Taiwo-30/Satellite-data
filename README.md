@@ -13,6 +13,8 @@ To use all the features, you will need the following modules:
     geopandas
     glob
     gzip
+    datetime
+    imageio
     rasterio
     rasterstats
     shapely
