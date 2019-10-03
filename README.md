@@ -25,8 +25,24 @@ To use all the features, you will need the following modules:
     celery
     rabbitmq-server
     flower
+    
+If you are using conda, I recommend to create an env for this package. The following steps worked for me:
 
-Geoviews is optional as it is responsible for only some visualization functions. If you want these features, then cartopy must be installed before geoviews.
+1) Create your env with some packages.
+
+   `conda create -n satelite2 rasterio pandas geopandas imageio shapely xarray netCDF4 cartopy geoviews`
+
+2) Within this env, install the extra packages.
+
+   `conda install -c conda-forge rabbitmq-server`
+   
+   `conda install -c conda-forge flower`
+   
+   `conda install -c conda-forge rasterstats`
+   
+   `conda install -c conda-forge earthengine-api`
+
+Geoviews is optional as it is responsible for only some visualization functions. If you want these features, then cartopy must be installed before geoviews. 
 
 ## Features
 
