@@ -25,6 +25,8 @@ To use all the features, you will need the following modules:
     celery
     rabbitmq-server
     flower
+    earthengine-api
+    pydrive
     
 If you are using conda, I recommend to create an env for this package. The following steps worked for me:
 
@@ -38,6 +40,7 @@ If you are using conda, I recommend to create an env for this package. The follo
         conda install -c conda-forge flower   
         conda install -c conda-forge rasterstats   
         conda install -c conda-forge earthengine-api
+        conda install -c conda-forge pydrive
    
 Geoviews is optional as it is responsible for only some visualization functions. If you want these features, then cartopy must be installed before geoviews. 
 
@@ -59,14 +62,6 @@ Interactive sessions to visualize the time evolution of the raster data are avai
   <img src="https://github.com/felipebottega/Satellite-Codes/blob/master/readme_files/demo.gif">
 </p>
 
+## Google Earth Engine
 
-
-
-
-
-
-
-
-
-
-
+Some sources are available only with Google Earth Engine. To use it you need to install and authenticate, follow the instructions [here](https://developers.google.com/earth-engine/python_install-conda.html). All downloads automatically goes to your Google Drive, hence you also need to install pydrive and create an API, that way the program will be able to download from the Drive to your computer autimatically, follow the instructions [here](https://pythonhosted.org/PyDrive/quickstart.html). After these steps are done, the files `client_secrets.json`, `credentials.json` and `mycreds.txt` must be saved in the same place where the module **tiff_downloader** is located.   
