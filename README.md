@@ -22,9 +22,6 @@ To use all the features, you will need the following modules:
     netCDF4
     cartopy
     geoviews (version 1.6.2 or higher)
-    celery
-    rabbitmq-server
-    flower
     earthengine-api
     pydrive
     
@@ -36,8 +33,6 @@ If you are using conda, I recommend to create an env for this package. The follo
 
 2) Within this env, install the extra packages.
 
-        conda install -c conda-forge rabbitmq-server   
-        conda install -c conda-forge flower   
         conda install -c conda-forge rasterstats   
         conda install -c conda-forge earthengine-api
         conda install -c conda-forge pydrive
